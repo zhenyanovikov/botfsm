@@ -24,12 +24,6 @@ func main() {
 			// Setting up HandlerFunc, that will execute
 			// after fsm.Handle(...) call
 			func(ctx *fsm.Context) (fsm.Arguments, error) {
-				if len(ctx.Arguments) == 1 {
-					if ctx.Arg(0) == "exit" {
-						fmt.Println("Goodbye!")
-						os.Exit(1)
-					}
-				}
 				text, _, _ := ctx.Text()
 				printOutput(text)
 				return fsm.Arguments{}, nil
@@ -55,33 +49,27 @@ func main() {
 			fsm.WildcardToken: "enter_name",
 		})
 
-	f.RegisterMenu("exit",
-		fsm.NewTransition(
-			fsm.StaticHandlerWithArgs("exit"),
-			fsm.StaticText(""),
-			// this flag will make Handle() function execute next
-			// transition right after current
-			fsm.GoForward(true),
-		),
-		fsm.Transitions{
-			fsm.WildcardToken: "start",
-		},
-	)
-
 	f.RegisterMenu("enter_name",
 		fsm.NewTransition(
 			func(ctx *fsm.Context) (fsm.Arguments, error) {
 				return fsm.Arguments{ctx.Event}, nil
 			},
-			fsm.StaticText(""),
-			fsm.GoForward(true),
+			fsm.StaticText("You entered your name!"),
 		),
 		fsm.Transitions{
 			fsm.WildcardToken: "start",
 		},
 	)
 
-	events := []string{"", "Yevhenii", "exit"}
+	f.RegisterMenu("exit",
+		fsm.NewTransition(
+			ExitHandlerFunc(),
+			fsm.StaticText(""),
+		),
+		fsm.Transitions{},
+	)
+
+	events := []string{"", "Yevhenii", "ok", "exit"}
 
 	var state string
 	var args fsm.Arguments
@@ -89,16 +77,28 @@ func main() {
 	for _, event := range events {
 		printInput(event)
 
-		s, a, err := f.Handle(event, state, args, nil)
+		newState, newArgs, err := f.Handle(event, state, args, nil)
 		if err != nil {
 			panic(err)
 		}
 
-		fmt.Printf("'%s' -> '%s'\n", state, s)
+		printState(state, newState)
 
-		state = s
-		args = a
+		state = newState
+		args = newArgs
 
+	}
+}
+
+func printState(state string, newState string) {
+	fmt.Printf("[STATE] '%s' -> '%s'\n", state, newState)
+}
+
+func ExitHandlerFunc() fsm.HandlerFunc {
+	return func(ctx *fsm.Context) (fsm.Arguments, error) {
+		fmt.Println("Bye!")
+		os.Exit(1)
+		return nil, nil
 	}
 }
 

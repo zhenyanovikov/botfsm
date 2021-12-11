@@ -23,3 +23,4 @@ go get github.com/zhenyanovikov/botfsm
 todo
 
 - [Simple example](examples/simple/main.go)
+- [GoForward example](examples/go-forward/main.go)
