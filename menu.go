@@ -10,7 +10,7 @@ type Menu struct {
 	fsm *BotFSM
 
 	State      string
-	Transition Transition
+	Transition *Transition
 	//Transitions is a map[event]state, that is mapping events with state
 	Transitions Transitions
 }
@@ -43,7 +43,11 @@ func (m *Menu) ConfirmAfter(handler HandlerFunc, backMenu *Menu, successState st
 	return menu
 }
 
-func validateMenu(transition Transition, transitions Transitions) error {
+func validateMenu(transition *Transition, transitions Transitions) error {
+	if transition == nil {
+		return errors.New("transition is nil")
+	}
+
 	if transition.GoForward {
 		if len(transitions) != 1 {
 			return errors.New("transition must have only 1 transition if it is marked as GoForward")

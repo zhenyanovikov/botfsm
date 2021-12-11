@@ -63,7 +63,7 @@ func New() *BotFSM {
 	}
 }
 
-func NewTransition(handler HandlerFunc, text TextFunc, opt ...interface{}) Transition {
+func NewTransition(handler HandlerFunc, text TextFunc, opt ...interface{}) *Transition {
 	obj, err := ShouldNewTransition(handler, text, opt...)
 	if err != nil {
 		panic(err)
@@ -71,9 +71,9 @@ func NewTransition(handler HandlerFunc, text TextFunc, opt ...interface{}) Trans
 	return obj
 }
 
-func ShouldNewTransition(handler HandlerFunc, text TextFunc, opts ...interface{}) (Transition, error) {
+func ShouldNewTransition(handler HandlerFunc, text TextFunc, opts ...interface{}) (*Transition, error) {
 	if handler == nil {
-		return Transition{}, errors.New("handler is nil")
+		return nil, errors.New("handler is nil")
 	}
 
 	transition := Transition{
@@ -83,6 +83,8 @@ func ShouldNewTransition(handler HandlerFunc, text TextFunc, opts ...interface{}
 
 	for _, opt := range opts {
 		switch field := opt.(type) {
+		case TextFunc:
+			transition.Text = field
 		case KeyboardFunc:
 			transition.Keyboard = field
 		case BackMenu:
@@ -94,24 +96,24 @@ func ShouldNewTransition(handler HandlerFunc, text TextFunc, opts ...interface{}
 		case GoForwardSilent:
 			transition.GoForwardSilent = bool(field)
 		default:
-			return Transition{}, errors.New("unknown data type passed to optionals: " + reflect.TypeOf(field).String())
+			return nil, errors.New("unknown data type passed to optionals: " + reflect.TypeOf(field).String())
 		}
 	}
 
 	if transition.Handler == nil {
-		return Transition{}, errors.New("handler is nil")
+		return nil, errors.New("handler is nil")
 	}
 
 	if !transition.GoForward && !transition.GoForwardSilent {
 		if text == nil {
-			return Transition{}, errors.New("text func is nil")
+			return nil, errors.New("text func is nil")
 		}
 	}
 
-	return transition, nil
+	return &transition, nil
 }
 
-func (fsm *BotFSM) ShouldRegisterMenu(state string, transition Transition, transitions Transitions) (*Menu, error) {
+func (fsm *BotFSM) ShouldRegisterMenu(state string, transition *Transition, transitions Transitions) (*Menu, error) {
 	fsm.mu.Lock()
 	defer fsm.mu.Unlock()
 
@@ -129,7 +131,9 @@ func (fsm *BotFSM) ShouldRegisterMenu(state string, transition Transition, trans
 	return &menu, nil
 }
 
-func (fsm *BotFSM) RegisterMenu(state string, transition Transition, transitions Transitions) *Menu {
+// RegisterMenu used for describing menu's state, transition handlers
+// (what to do, when you on this state) and possible transitions
+func (fsm *BotFSM) RegisterMenu(state string, transition *Transition, transitions Transitions) *Menu {
 	menu, err := fsm.ShouldRegisterMenu(state, transition, transitions)
 	if err != nil {
 		panic(err)
